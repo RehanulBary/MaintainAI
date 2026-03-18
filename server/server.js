@@ -8,10 +8,10 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import dotenv from "dotenv";
 dotenv.config();
 
-// --- Telegram Approval Setup ---
+
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-const pendingActions = new Map(); // id -> { tool, args, token }
+const pendingActions = new Map();
 
 const genId = () => Math.random().toString(36).slice(2, 8);
 
@@ -66,7 +66,7 @@ async function callMCP(tool, args, token) {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
-        "X-GitHub-Token": token // Installation token scoped to webhook installation
+        "X-GitHub-Token": token 
       },
       signal: AbortSignal.timeout(15000),
       body: JSON.stringify(args),
