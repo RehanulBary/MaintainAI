@@ -47,7 +47,7 @@ server.use(createNodeMiddleware(app.webhooks, { path: "/" }));
 
 // Initializes the Gemini 2.5 Flash model with LangChain for the agent's brain.
 const model = new ChatGoogleGenerativeAI({
-  model: "gemini-2.5-flash", 
+  model: "gemini-2.5-flash",
   apiKey: process.env.GEMINI_API_KEY,
   temperature: 0,
 });
@@ -63,12 +63,12 @@ async function callMCP(tool, args, token) {
     }
 
     console.log(`\x1b[33m[MCP Call]\x1b[0m Tool: ${tool}`);
-    
+
     const res = await fetch(`http://localhost:8000/mcp/tools/${tool}`, {
       method: "POST",
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
-        "X-GitHub-Token": token 
+        "X-GitHub-Token": token
       },
       signal: AbortSignal.timeout(15000),
       body: JSON.stringify(args),
@@ -332,17 +332,55 @@ app.webhooks.on("pull_request", async ({ payload, octokit }) => {
   let prompt = null;
   if (action === "opened" || action === "synchronize" || action === "ready_for_review") {
     prompt = `
-      Pull request ${action} in ${repo}. PR #${pr.number}: "${title}". Body: "${body}".
-      
-      You are a Senior AI Code Reviewer. Perform a thorough review following this exact SOP:
-      1. Use 'list_pr_files' to see what files were modified.
-      2. Use 'get_pr_diff' to review the actual code changes.
-      3. IMPACT ANALYSIS: If a core function or component was changed, use 'search_repo_code' to find other files in the codebase that import or rely on the changed code. If found, use 'get_file_content' to verify the PR doesn't break them.
-      4. Formulate your final decision:
-         - If the code looks great: Use 'create_pull_request_review' with event "APPROVE" and a friendly summary.
-         - If there are bugs or breaking changes: Use 'create_pull_request_review' with event "REQUEST_CHANGES" and detail exactly what needs fixing.
-      CRITICAL: Do NOT attempt to merge the PR right now. Let the CI/CD pipeline finish first.
-    `;
+      Pull request ${action} in ${repo}. PR #${pr.number}: "${title}".
+      Body: "${body}".
+
+      You are a Senior AI Code Reviewer. Perform a thorough, structured review following this SOP:
+
+      1. FILE ANALYSIS
+        - Use 'list_pr_files' to retrieve all modified, added, and deleted files.
+        - Identify high-impact files (core logic, shared modules, configs).
+
+      2. DIFF REVIEW
+        - Use 'get_pr_diff' to inspect the exact code changes.
+        - Focus on:
+          • Logic correctness
+          • Edge cases
+          • Code quality and readability
+          • Security concerns
+
+      3. REPOSITORY CONTEXT MAPPING
+        - Use 'get_repo_tree' to understand overall project structure if needed.
+        - This helps identify architectural impact and file relationships.
+
+      4. IMPACT ANALYSIS (CRITICAL)
+        - If any core function, module, or shared component is modified:
+          a. Use 'search_repo_code' to locate where it is used across the repo.
+          b. For each relevant file found:
+              - Use 'get_file_content' to inspect usage.
+              - Verify the PR does NOT introduce breaking changes.
+
+      5. DECISION MAKING
+        Based on your analysis:
+        
+        ✅ If everything is correct:
+        - Use 'create_pull_request_review'
+        - event: "APPROVE"
+        - Provide a concise, professional summary of why the PR is valid.
+
+        ❌ If issues are found:
+        - Use 'create_pull_request_review'
+        - event: "REQUEST_CHANGES"
+        - Clearly specify:
+          • What is wrong
+          • Why it is a problem
+          • How to fix it
+
+      6. IMPORTANT CONSTRAINTS
+        - DO NOT merge the PR under any circumstances.
+        - CI/CD pipeline must complete before any merge decision.
+        - Be precise, actionable, and technically rigorous in feedback.
+      `;
   } else if (action === "closed" && pr?.merged) {
     prompt = `Pull request merged in ${repo}. PR #${pr.number}: "${title}". Use 'react_to_issue' to add a rocket or hooray emoji.`;
   }
@@ -370,7 +408,7 @@ app.webhooks.on("workflow_run", async ({ payload, octokit }) => {
   const prs = run.pull_requests;
 
   if (!prs || prs.length === 0) return;
-  
+
   const prNumber = prs[0].number;
   const conclusion = run.conclusion;
 
@@ -415,7 +453,7 @@ app.webhooks.onError((error) => {
 
 // Receives HTTP POST requests from the Telegram bot with approval/rejection commands to execute queued AI tools.
 server.post("/telegram", express.json(), async (req, res) => {
-  res.sendStatus(200); 
+  res.sendStatus(200);
 
   const text = (req.body?.message?.text || "").trim();
   const parts = text.split(" ");
