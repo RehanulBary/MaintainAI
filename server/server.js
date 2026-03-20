@@ -111,12 +111,7 @@ const unwrap = (input) => {
   }
 };
 
-// Truncates overly long text strings to prevent token limits when sending data to the AI.
-const toSafeText = (value, max = 1200) => {
-  if (value === null || value === undefined) return "";
-  const text = String(value).replace(/\s+/g, " ").trim();
-  return text.length > max ? `${text.slice(0, max)}...` : text;
-};
+
 
 // Checks if a webhook payload originated from a bot to prevent infinite AI loops.
 const isBotSender = (payload) => {
