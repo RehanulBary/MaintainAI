@@ -199,6 +199,18 @@ const tools = [
       return `Action queued. Closure request sent to Telegram. The user will handle it asynchronously. You have successfully completed your job, please conclude your response.`;
     },
   }),
+  // Requires user approval via Telegram before merging a pull request.
+  new DynamicTool({
+    name: "merge_pull_request",
+    description: "Merge a pull request. Args: { repo: string, pull_number: number, merge_method?: 'merge'|'squash'|'rebase' }",
+    func: async (input, config) => {
+      const args = unwrap(input);
+      const token = resolveGithubToken(config);
+      const id = genId();
+      pendingActions.set(id, { tool: "merge_pull_request", args, token });
+      await sendTelegram(`⚠️ *MERGE APPROVAL REQUIRED*\nAgent wants to merge PR #${args.pull_number} in ${args.repo} (CI tests passed).\n\nReply:\nAPPROVE ${id}\nREJECT ${id}`);
+      return `Action queued. Merge request sent to Telegram. The user will handle it asynchronously. You have successfully completed your job, please conclude your response.`;
+    },
   }),
   // Silently fetches details of a specific issue.
   new DynamicTool({ name: "get_issue", description: "Get issue details.", func: async (input, config) => await callMCP("get_issue", unwrap(input), resolveGithubToken(config)) }),
