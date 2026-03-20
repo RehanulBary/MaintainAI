@@ -9,18 +9,6 @@ from starlette.responses import JSONResponse
 
 mcp = FastMCP("github-tools")
 
-# Extracts the GitHub token from the incoming request headers or local environment variables.
-def get_token(request: Any):
-    """Extract dynamic token sent by Node.js, fallback to local env for manual testing."""
-    token = request.headers.get("X-GitHub-Token")
-    if token:
-        return token
-
-    auth_header = request.headers.get("Authorization", "")
-    if auth_header.lower().startswith("bearer "):
-        return auth_header.split(" ", 1)[1].strip()
-
-    return os.getenv("GITHUB_TOKEN")
 
 # Constructs the standard HTTP headers required for authenticating and formatting GitHub API requests.
 def get_headers(token: str):
